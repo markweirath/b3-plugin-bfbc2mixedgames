@@ -38,7 +38,8 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         # Register our events
         self.verbose('Registering events')
         self.registerEvent(b3.events.EVT_GAME_ROUND_START)
-        self.rotateMap()
+        if self.console.game.mapName:
+            self.rotateMap()
         self.debug('Started')
 
 
