@@ -1,0 +1,6 @@
+<configuration plugin="bfbc2mixedgames">
+	<settings name="settings">
+		<!-- GameType mapname rounds, GameType mapname rounds-->
+    <set name="rotation">SQDM mp_008sdm 2, CONQUEST mp_006cq 2</set>
+	</settings>
+</configuration>
