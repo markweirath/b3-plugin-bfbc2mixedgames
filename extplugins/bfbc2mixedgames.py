@@ -1,6 +1,6 @@
 #
 # Plugin for BigBrotherBot(B3) (www.bigbrotherbot.com)
-# Copyright (C) 2005 www.xlr8or.com
+# Copyright (C) 2010 www.xlr8or.com
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #
 
 __version__ = '1.0.0'
-__author__    = 'xlr8or'
+__author__  = 'xlr8or'
 
 import b3
 import b3.events
@@ -29,7 +29,7 @@ import b3.events
 class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
     _rotation = []
     _rotLength = 0
-    _curMapId = 0
+    _curMapId = -1
 
     def onStartup(self):
         """\
@@ -38,8 +38,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         # Register our events
         self.verbose('Registering events')
         self.registerEvent(b3.events.EVT_GAME_ROUND_START)
-        if self.console.game.mapName:
-            self.rotateMap()
+        self.rotateMap()
         self.debug('Started')
 
 
@@ -69,27 +68,44 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
 #--------------------------------------------------------------------------------------------------
 
     def rotateMap(self):
-        if self._curMapId >= len(self._rotation):
+        _nextMapId = self._curMapId + 1
+        if _nextMapId >= len(self._rotation):
             # mapcycle complete, start at first map again
-            self._curMapId = 0
+            _nextMapId = 0
 
-        # self._rotation = [['sqdm', 'map1', '2'], ['dm', 'mapdm', '1']]
-        if self._rotation[self._curMapId][2] < self.console.game.g_maxrounds:
+        # self._rotation = [['SQDM', 'mp_008', '2'], ['CONQUEST', 'mp_002', '1']]
+        # next paragraph is a workaround to get the proper current round number. This will be fixed in B3 version 1.3.4
+        # that's when we can change to the commented code, saves a serverInfo() request. 
+        """
+        self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(self.console.game.rounds, self.console.game.g_maxrounds))
+        if self.console.game.rounds < self.console.game.g_maxrounds:
             # not yet reached the set number of rounds
+            self.debug('Not setting next map, rounds not completed.')
+            return None
+        """
+        data = self.console.getServerInfo() 
+        _curRound = data[5]
+        _maxRounds = data[6]
+        self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(_curRound, _maxRounds))
+        if _curRound < _maxRounds:
+            # not yet reached the set number of rounds
+            self.debug('Not setting next map, rounds not completed.')
             return None
 
         # prepare the next map
-        _nextMapId = self._curMapId + 1
         _nextGameType = self._rotation[_nextMapId][0]
         _nextMap = 'Levels/' + str(self._rotation[_nextMapId][1])
-        _nextNrRounds = self._rotation[_nextMapId][2]
-        if not _nextNrRounds:
+        if not self._rotation[_nextMapId][2]:
             _nextNrRounds = 2
+        else:
+            _nextNrRounds = self._rotation[_nextMapId][2]
         # send the changes to the server
-        self.debug('Rotating Map, setting GameType: %s, Map: %s, Rounds: %s' %(_nextGameType, _nextMap, _nextNrRounds))
+        self.debug('Next Map: GameType: %s, Map: %s, Rounds: %s' %(_nextGameType, _nextMap, _nextNrRounds))
         self._changeMode(_nextGameType)
         self.console.write(('mapList.clear', ))
         self.console.write(('mapList.append', _nextMap, _nextNrRounds))
+        self.console.write(('mapList.save', ))
+        self._curMapId = _nextMapId
 
 
     def _changeMode(self, mode=None):
