@@ -1,6 +1,14 @@
 <configuration plugin="bfbc2mixedgames">
 	<settings name="settings">
-		<!-- GameType mapname rounds, GameType mapname rounds-->
+
+		<!-- GameType mapname rounds, GameType mapname rounds (don't add 'Levels/'' in fromt of the name!)-->
 		<set name="rotation">SQDM mp_008sdm 2, CONQUEST mp_006cq 2</set>
+
+		<!-- On an empty server the plugin rotates to the next level after this many minutes, 0 disables -->
+		<set name="emptytime">10</set>
+
+		<!-- Should we also rotate if 1 player is online? -->
+		<set name="rotate1">True</set>
+
 	</settings>
 </configuration>

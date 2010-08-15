@@ -19,6 +19,9 @@ This plugin will take control of your maplist. You will be able to create
 a maplist in the plugin config containing multiple gametypes. Just look at the
 config in this package to see how you can set the maprotation.
 
+It will also rotate maps on an empty server if emptytime is set in the config
+(0 to disable)
+
 Requirements:
 ###################################################################################
 

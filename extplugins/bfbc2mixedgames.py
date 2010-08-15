@@ -1,6 +1,6 @@
 #
-# Plugin for BigBrotherBot(B3) (www.bigbrotherbot.com)
-# Copyright (C) 2010 www.xlr8or.com
+# Plugin for BigBrotherBot(B3) (www.bigbrotherbot.net)
+# Copyright (C) 2010 Mark Weirath (www.xlr8or.com)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,19 +17,24 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA    02110-1301    USA
 #
 # Changelog:
-#
+# 14-05-2010 - 1.1.0 - xlr8or
+#  * Added empty map rotation 
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __author__  = 'xlr8or'
 
 import b3
 import b3.events
+import threading
 
 #--------------------------------------------------------------------------------------------------
 class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
     _rotation = []
     _rotLength = 0
     _curMapId = -1
+    _emptyTime = 10 # in minutes
+    _rotate1 = False
+    _rotateNr = 0
 
     def onStartup(self):
         """\
@@ -38,18 +43,39 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         # Register our events
         self.verbose('Registering events')
         self.registerEvent(b3.events.EVT_GAME_ROUND_START)
-        self.rotateMap()
+        self.registerEvent(b3.events.EVT_CLIENT_CONNECT)
+        self.registerEvent(b3.events.EVT_CLIENT_DISCONNECT)
+        self.queueMap()
+        self.startEmptyTimer()
         self.debug('Started')
 
 
     def onLoadConfig(self):
         # load our settings
         self.verbose('Loading config')
+        try:
+            self._emptyTime = self.config.getint('settings', 'emptytime')
+        except:
+            pass
+        #convert to seconds
+        self._emptyTime *= 60 
+
+        try:
+            self._rotate1 = self.config.getboolean('settings', 'rotate1')
+        except:
+            pass
+        if self._rotate1:
+            self._rotateNr = 1
+        else:
+            self._rotateNr = 0
+
         # load the rotation from file
         _r = self.config.get('settings', 'rotation').split(',')
         for i in _r:
             self._rotation.append(i.strip().split())
         self.verbose('Loaded Rotation: %s' % self._rotation)
+
+        self.verbose('Configs Loaded')
 
 
     def onEvent(self, event):
@@ -57,7 +83,14 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         Handle intercepted events
         """
         if event.type == b3.events.EVT_GAME_ROUND_START:
-            self.rotateMap()
+            self.queueMap()
+            if self.countPlayers() <= self._rotateNr and self._emptyTime != 0:
+                self.startEmptyTimer()
+        elif event.type == b3.events.EVT_CLIENT_CONNECT:
+            self.verbose('Number of clients online: %s' %self.countPlayers() )
+        elif event.type == b3.events.EVT_CLIENT_DISCONNECT:
+            if self.countPlayers() <= self._rotateNr and self._emptyTime != 0:
+                self.startEmptyTimer()
         else:
             self.dumpEvent(event)
 
@@ -67,7 +100,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
 
 #--------------------------------------------------------------------------------------------------
 
-    def rotateMap(self):
+    def queueMap(self):
         _nextMapId = self._curMapId + 1
         if _nextMapId >= len(self._rotation):
             # mapcycle complete, start at first map again
@@ -101,14 +134,14 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
             _nextNrRounds = self._rotation[_nextMapId][2]
         # send the changes to the server
         self.debug('Next Map: GameType: %s, Map: %s, Rounds: %s' %(_nextGameType, _nextMap, _nextNrRounds))
-        self._changeMode(_nextGameType)
+        self.changeMode(_nextGameType)
         self.console.write(('mapList.clear', ))
         self.console.write(('mapList.append', _nextMap, _nextNrRounds))
         self.console.write(('mapList.save', ))
         self._curMapId = _nextMapId
+        return None
 
-
-    def _changeMode(self, mode=None):
+    def changeMode(self, mode=None):
         if mode is None:
             self.error('mode cannot be None')
         elif mode not in ('CONQUEST', 'RUSH', 'SQDM', 'SQRUSH'):
@@ -118,7 +151,41 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
                 self.console.write(('admin.setPlaylist', mode))
             except Bfbc2CommandFailedError, err:
                 self.error('Failed to change game mode. Server replied with: %s' % err)
+        return None
 
+    def countPlayers(self):
+        p = len(self.console.clients.getList())
+        if not p:
+            p = 0
+        self.debug('Counting: %s players online' % p )
+        return p
+
+    def startEmptyTimer(self):
+        if self._emptyTime == 0:
+            return None
+        # if already running, cancel it first
+        try:
+            t.cancel()
+        except:
+            pass
+        t = threading.Timer(self._emptyTime, self.rotateEmpty)
+        self.verbose('Starting Empty Timer...')
+        t.start()
+        return None
+        
+    def rotateEmpty(self):
+        if self.countPlayers() <= self._rotateNr:
+            self.console.saybig('Rotating Map!')
+            t1 = threading.Timer(5, self.doRotate)
+        else:
+            self.debug('No need to rotate.')
+        return None
+
+    def doRotate(self):
+        self.debug('Rotating Map.')
+        self.console.write(('admin.runNextLevel', ))
+        return None
+        
 #--------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
