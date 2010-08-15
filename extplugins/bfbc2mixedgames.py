@@ -87,7 +87,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
             if self.countPlayers() <= self._rotateNr and self._emptyTime != 0:
                 self.startEmptyTimer()
         elif event.type == b3.events.EVT_CLIENT_CONNECT:
-            self.verbose('Number of clients online: %s' %self.countPlayers() )
+            self.countPlayers() # will output the number of connected clients
         elif event.type == b3.events.EVT_CLIENT_DISCONNECT:
             if self.countPlayers() <= self._rotateNr and self._emptyTime != 0:
                 self.startEmptyTimer()
@@ -177,6 +177,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         if self.countPlayers() <= self._rotateNr:
             self.console.saybig('Rotating Map!')
             t1 = threading.Timer(5, self.doRotate)
+            t1.start()
         else:
             self.debug('No need to rotate.')
         return None
