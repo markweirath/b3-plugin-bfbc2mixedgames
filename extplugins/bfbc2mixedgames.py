@@ -83,9 +83,11 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         Handle intercepted events
         """
         if event.type == b3.events.EVT_GAME_ROUND_START:
-            self.queueMap()
             if self.countPlayers() <= self._rotateNr and self._emptyTime != 0:
+                self.queueMap(empty=True)
                 self.startEmptyTimer()
+            else:
+                self.queueMap(empty=False)
         elif event.type == b3.events.EVT_CLIENT_CONNECT:
             self.countPlayers() # will output the number of connected clients
         elif event.type == b3.events.EVT_CLIENT_DISCONNECT:
@@ -100,30 +102,33 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
 
 #--------------------------------------------------------------------------------------------------
 
-    def queueMap(self):
+    def queueMap(self, empty=False):
         _nextMapId = self._curMapId + 1
         if _nextMapId >= len(self._rotation):
             # mapcycle complete, start at first map again
             _nextMapId = 0
 
-        # self._rotation = [['SQDM', 'mp_008', '2'], ['CONQUEST', 'mp_002', '1']]
-        # next paragraph is a workaround to get the proper current round number. This will be fixed in B3 version 1.3.4
-        # that's when we can change to the commented code, saves a serverInfo() request. 
-        """
-        self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(self.console.game.rounds, self.console.game.g_maxrounds))
-        if self.console.game.rounds < self.console.game.g_maxrounds:
-            # not yet reached the set number of rounds
-            self.debug('Not setting next map, rounds not completed.')
-            return None
-        """
-        data = self.console.getServerInfo() 
-        _curRound = data[5]
-        _maxRounds = data[6]
-        self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(_curRound, _maxRounds))
-        if _curRound < _maxRounds:
-            # not yet reached the set number of rounds
-            self.debug('Not setting next map, rounds not completed.')
-            return None
+        if not empty:
+            # self._rotation = [['SQDM', 'mp_008', '2'], ['CONQUEST', 'mp_002', '1']]
+            # next paragraph is a workaround to get the proper current round number. This will be fixed in B3 version 1.3.4
+            # that's when we can change to the commented code, saves a serverInfo() request. 
+            """
+            self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(self.console.game.rounds, self.console.game.g_maxrounds))
+            if self.console.game.rounds < self.console.game.g_maxrounds:
+                # not yet reached the set number of rounds
+                self.debug('Not setting next map, rounds not completed.')
+                return None
+            """
+            data = self.console.getServerInfo() 
+            _curRound = data[5]
+            _maxRounds = data[6]
+            self.debug('CurRoundNr: %s, MaxRoundNrs: %s' %(_curRound, _maxRounds))
+            if _curRound < _maxRounds:
+                # not yet reached the set number of rounds
+                self.debug('Not setting next map, rounds not completed.')
+                return None
+        else:
+            self.debug('Setting next map, server is empty.')
 
         # prepare the next map
         _nextGameType = self._rotation[_nextMapId][0]
