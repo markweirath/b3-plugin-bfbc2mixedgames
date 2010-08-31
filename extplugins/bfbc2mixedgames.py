@@ -35,6 +35,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
     _rotLength = 0
     _curMapId = -1
     _emptyTime = 10 # in minutes
+    _emptyTimerRunning = False
     _rotate1 = False
     _rotateNr = 0
 
@@ -168,9 +169,10 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
         return p
 
     def startEmptyTimer(self):
-        if self._emptyTime == 0:
+        if self._emptyTime == 0 or self._emptyTimerRunning:
             return None
         t = threading.Timer(self._emptyTime, self.rotateEmpty)
+        self._emptyTimerRunning = True
         self.verbose('Starting Empty Timer...')
         t.start()
         return None
@@ -182,6 +184,7 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
             t1.start()
         else:
             self.debug('No need to rotate.')
+        self._emptyTimerRunning = False
         return None
 
     def doRotate(self):
