@@ -168,11 +168,6 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
     def startEmptyTimer(self):
         if self._emptyTime == 0:
             return None
-        # if already running, cancel it first
-        try:
-            t.cancel()
-        except:
-            pass
         t = threading.Timer(self._emptyTime, self.rotateEmpty)
         self.verbose('Starting Empty Timer...')
         t.start()
