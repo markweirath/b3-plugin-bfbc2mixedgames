@@ -19,8 +19,10 @@
 # Changelog:
 # 14-05-2010 - 1.1.0 - xlr8or
 #  * Added empty map rotation 
+# 31-08-2010 - 1.1.1 - xlr8or
+#  * Fixed a bug where threads where not finished eating up large amounts of memory 
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 __author__  = 'xlr8or'
 
 import b3
