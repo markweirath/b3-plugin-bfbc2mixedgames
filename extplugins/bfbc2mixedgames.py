@@ -20,9 +20,11 @@
 # 14-05-2010 - 1.1.0 - xlr8or
 #  * Added empty map rotation 
 # 31-08-2010 - 1.1.1 - xlr8or
-#  * Fixed a bug where threads where not finished eating up large amounts of memory 
+#  * Made sure _emptyTimer runs only once
+# 02-09-2010 - 1.1.2 - xlr8or
+#  * Made it immune to mapnames including Levels/... or levels/... 
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 __author__  = 'xlr8or'
 
 import b3
@@ -135,7 +137,10 @@ class Bfbc2MixedgamesPlugin(b3.plugin.Plugin):
 
         # prepare the next map
         _nextGameType = self._rotation[_nextMapId][0]
-        _nextMap = 'Levels/' + str(self._rotation[_nextMapId][1])
+        if str(self._rotation[_nextMapId][1])[1:7] == 'evels/':
+            _nextMap = 'Levels/' + str(self._rotation[_nextMapId][1])[7:]
+        else:
+            _nextMap = 'Levels/' + str(self._rotation[_nextMapId][1])
         if not self._rotation[_nextMapId][2]:
             _nextNrRounds = 2
         else:
